@@ -587,15 +587,18 @@ def sales():
             phone = str(form.phone.data)  # Ensure phone is string
 
             try:
-                # Get fuel price and stock
-        cursor.execute("SELECT price, stock FROM fuel WHERE type=%s", (fuel_type,))
+                cursor.execute("SELECT price, stock FROM fuel WHERE type=%s", (fuel_type,))
                 fuel_data = cursor.fetchone()
 
                 if not fuel_data:
                     flash('Fuel type not found', 'error')
                 else:
-                    price = float(fuel_data[0])  # Ensure price is float
-                    stock = float(fuel_data[1])  # Ensure stock is float
+                    price = float(fuel_data[0])
+                    stock = float(fuel_data[1])
+
+            except Exception as e:
+                print("DB error:", e)
+                flash("Database error", "error")
 
                     if liters > stock:
                         flash(f'Not enough stock! Available: {stock} L', 'error')
