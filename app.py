@@ -236,6 +236,16 @@ def ensure_database_schema():
             )
         """)
 
+        # Create default admin user if not exists
+        cursor.execute("SELECT id FROM users WHERE username=%s", ("admin",))
+        admin = cursor.fetchone()
+        if not admin:
+            password = generate_password_hash("admin123")
+            cursor.execute(
+                "INSERT INTO users (name, username, password, role) VALUES (%s, %s, %s, %s)",
+                ("Admin", "admin", password, "admin")
+            )
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS login_attempts(
                 id SERIAL PRIMARY KEY,
@@ -249,6 +259,7 @@ def ensure_database_schema():
         """)
     else:
         # SQLite schema (existing)
+
         cursor.execute("CREATE TABLE IF NOT EXISTS users("
                        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
                        "name TEXT,"
