@@ -136,10 +136,7 @@ def generate_bill_pdf_from_id(bill_id):
         return None
     
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT bill_id, customer, phone, payment_mode, fuel_type, liters, price, total, date 
-        FROM sales WHERE bill_id = ?
-    """, (bill_id,))
+    cursor.execute("""\n        SELECT bill_id, customer, phone, payment_mode, fuel_type, liters, price, total, date \n        FROM sales WHERE bill_id = %s\n    """, (bill_id,))
     
     bill = cursor.fetchone()
     conn.close()

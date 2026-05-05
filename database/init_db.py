@@ -105,10 +105,7 @@ if cursor.fetchone()[0] == 0:
 
 cursor.execute("SELECT COUNT(*) FROM users")
 if cursor.fetchone()[0] == 0:
-    cursor.execute("""
-        INSERT INTO users (name, username, password, role) 
-        VALUES (?, ?, ?, ?)
-    """, ('Admin', 'admin', generate_password_hash('admin123'), 'Admin'))
+    cursor.execute("""\n        INSERT INTO users (name, username, password, role) \n        VALUES (%s, %s, %s, %s)\n    """, ('Admin', 'admin', generate_password_hash('admin123'), 'Admin'))
 
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

@@ -121,7 +121,7 @@ def get_user_by_username(username):
     """Fetch a user by username."""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE username=?", (username,))
+        cursor.execute("SELECT * FROM users WHERE username=%s", (username,))
         return cursor.fetchone()
 
 
@@ -145,7 +145,7 @@ def is_account_locked(user):
 def set_user_field(username, field, value):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(f"UPDATE users SET {field}=? WHERE username=?", (value, username))
+        cursor.execute(f"UPDATE users SET {field}=%s WHERE username=%s", (value, username))
         conn.commit()
     return True
 
@@ -158,7 +158,7 @@ def reset_failed_logins(username):
 def increment_failed_login(username):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT failed_login_attempts FROM users WHERE username=?", (username,))
+        cursor.execute("SELECT failed_login_attempts FROM users WHERE username=%s", (username,))
         row = cursor.fetchone()
         failed_attempts = row['failed_login_attempts'] if row else 0
         failed_attempts += 1
@@ -166,10 +166,10 @@ def increment_failed_login(username):
         lock_message = ''
         if failed_attempts >= MAX_LOGIN_ATTEMPTS:
             lock_until = datetime.now() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
-            cursor.execute("UPDATE users SET failed_login_attempts=?, locked_until=? WHERE username=?", (failed_attempts, lock_until.isoformat(), username))
+            cursor.execute("UPDATE users SET failed_login_attempts=%s, locked_until=%s WHERE username=%s", (failed_attempts, lock_until.isoformat(), username))
             lock_message = f' Account locked for {LOCKOUT_DURATION_MINUTES} minutes.'
         else:
-            cursor.execute("UPDATE users SET failed_login_attempts=? WHERE username=?", (failed_attempts, username))
+            cursor.execute("UPDATE users SET failed_login_attempts=%s WHERE username=%s", (failed_attempts, username))
 
         conn.commit()
     return lock_message
@@ -183,7 +183,7 @@ def record_login_attempt(username, success, message=''):
     ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
     user_agent = request.headers.get('User-Agent', '')
     cursor.execute(
-        "INSERT INTO login_attempts (username, success, ip_address, user_agent, message) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO login_attempts (username, success, ip_address, user_agent, message) VALUES (%s, %s, %s, %s, %s)",
         (username, int(success), ip_address, user_agent, message)
     )
     conn.commit()
@@ -478,12 +478,12 @@ def reset_admin():
             hashed_password = generate_password_hash(new_password)
 
             # Upsert admin account
-            cursor.execute('SELECT id FROM users WHERE username=?', (new_user,))
+            cursor.execute('SELECT id FROM users WHERE username=%s', (new_user,))
             row = cursor.fetchone()
             if row:
-                cursor.execute('UPDATE users SET password=?, role=? WHERE id=?', (hashed_password, 'Admin', row['id']))
+                cursor.execute('UPDATE users SET password=%s, role=%s WHERE id=%s', (hashed_password, 'Admin', row['id']))
             else:
-                cursor.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', (new_user, hashed_password, 'Admin'))
+                cursor.execute('INSERT INTO users (username, password, role) VALUES (%s, %s, %s)', (new_user, hashed_password, 'Admin'))
 
             conn.commit()
             conn.close()
@@ -588,7 +588,7 @@ def sales():
 
             try:
                 # Get fuel price and stock
-                cursor.execute("SELECT price, stock FROM fuel WHERE type=?", (fuel_type,))
+        cursor.execute("SELECT price, stock FROM fuel WHERE type=%s", (fuel_type,))
                 fuel_data = cursor.fetchone()
 
                 if not fuel_data:
@@ -614,24 +614,24 @@ def sales():
                         # Customer upsert logic (Phase 5.2)
                         cursor.execute("""
                             INSERT OR IGNORE INTO customers (name, phone)
-                            VALUES (?, ?)
+                            VALUES (%s, %s)
                         """, (customer, formatted_phone))
                         
                         cursor.execute("""
                             UPDATE customers 
                             SET total_visits = total_visits + 1,
-                                total_fuel = total_fuel + ?,
+                                total_fuel = total_fuel + %s,
                                 updated_at = CURRENT_TIMESTAMP
-                            WHERE phone = ? OR id = (SELECT id FROM customers WHERE name = ? LIMIT 1)
+                            WHERE phone = %s OR id = (SELECT id FROM customers WHERE name = %s LIMIT 1)
                         """, (liters, formatted_phone, customer))
                         
                         # Insert sale
                         cursor.execute("""
                             INSERT INTO sales (bill_id, customer, phone, payment_mode, fuel_type, liters, price, total, date, employee_id)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """, (bill_id, customer, formatted_phone, form.payment_mode.data, fuel_type, liters, price, total, date, employee_id))
 
-                        cursor.execute("UPDATE fuel SET stock = stock - ? WHERE type=?",
+                        cursor.execute("UPDATE fuel SET stock = stock - %s WHERE type=%s",
                                      (liters, fuel_type))
                         conn.commit()
 
@@ -724,7 +724,7 @@ def inventory():
             else:
                 stock = stock_or_error
                 try:
-                    cursor.execute("UPDATE fuel SET stock = stock + ? WHERE type=?", (stock, fuel))
+                    cursor.execute("UPDATE fuel SET stock = stock + %s WHERE type=%s", (stock, fuel))
                     conn.commit()
                     message = f"success"
                 except sqlite3.Error as e:
@@ -816,7 +816,7 @@ def employees():
                 user_id = request.form.get('user_id')
                 if user_id and user_id.isdigit():
                     try:
-                        cursor.execute("DELETE FROM users WHERE id=? AND role=?", (int(user_id), 'Employee'))
+                        cursor.execute("DELETE FROM users WHERE id=%s AND role=%s", (int(user_id), 'Employee'))
                         conn.commit()
                         flash('Employee deleted successfully!', 'success')
                     except sqlite3.Error as e:
@@ -1067,7 +1067,7 @@ def get_customer(customer_id):
     """Get single customer for edit modal"""
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM customers WHERE id = ?", (customer_id,))
+    cursor.execute("SELECT * FROM customers WHERE id = %s", (customer_id,))
     customer = cursor.fetchone()
     conn.close()
     
