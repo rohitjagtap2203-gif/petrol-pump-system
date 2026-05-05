@@ -1,0 +1,156 @@
+{% extends "layout.html" %}
+
+{% block title %}Billing History - Petrol Pump Management{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h2><i class="fas fa-history"></i> Billing History & Reports</h2>
+    <p class="page-subtitle">View past transactions and download PDF receipts</p>
+</div>
+
+<!-- FILTERS -->
+<div class="section">
+    <h3>🔍 Filters</h3>
+    <form method="GET" class="filters-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Date Range:</label>
+                <select name="date_filter" onchange="this.form.submit()">
+                    <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                    <option value="7days" {% if date_filter == '7days' %}selected{% endif %}>Last 7 Days</option>
+                    <option value="30days" {% if date_filter == '30days' %}selected{% endif %}>Last 30 Days</option>
+                    <option value="all">All Time</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Payment Mode:</label>
+                <select name="payment_mode">
+                    <option value="">All Payments</option>
+                    <option value="Cash" {% if payment_mode == 'Cash' %}selected{% endif %}>Cash</option>
+                    <option value="UPI" {% if payment_mode == 'UPI' %}selected{% endif %}>UPI</option>
+                    <option value="Card" {% if payment_mode == 'Card' %}selected{% endif %}>Card</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Fuel Type:</label>
+                <select name="fuel_type">
+                    <option value="">All Fuels</option>
+                    <option value="Petrol" {% if fuel_type == 'Petrol' %}selected{% endif %}>Petrol</option>
+                    <option value="Diesel" {% if fuel_type == 'Diesel' %}selected{% endif %}>Diesel</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filter</button>
+            <a href="/reports" class="btn btn-secondary"><i class="fas fa-refresh"></i> Reset</a>
+        </div>
+    </form>
+</div>
+
+<!-- BILLS TABLE -->
+<div class="section">
+    <div class="table-header">
+        <h3>📋 Transaction History ({{ bills|length }} records)</h3>
+        {% if bills %}
+        <a href="/reports/export/csv" class="btn btn-success"><i class="fas fa-file-csv"></i> Export CSV</a>
+        {% endif %}
+    </div>
+    
+    {% if bills %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Bill ID</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Phone</th>
+                    <th>Fuel</th>
+                    <th>Liters</th>
+                    <th>Payment</th>
+                    <th>Total</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bill in bills %}
+                <tr>
+                    <td><strong>{{ bill.bill_id }}</strong></td>
+                    <td>{{ bill.date[:16] }}</td>
+                    <td>{{ bill.customer }}</td>
+                    <td>{{ bill.phone[-10:] if bill.phone else '-' }}</td>
+                    <td><span class="badge badge-{{ 'primary' if bill.fuel_type == 'Petrol' else 'info' }}">{{ bill.fuel_type }}</span></td>
+                    <td>{{ "%.2f"|format(bill.liters) }} L</td>
+                    <td><span class="badge badge-success">{{ bill.payment_mode or 'Cash' }}</span></td>
+                    <td class="money">₹{{ "%.2f"|format(bill.total) }}</td>
+                    <td>
+                        <a href="/bill/pdf/{{ bill.bill_id }}" class="btn btn-primary btn-small" title="Download PDF">
+                            <i class="fas fa-file-pdf"></i>
+                        </a>
+                        <button class="btn btn-secondary btn-small" onclick="printBill('{{ bill.bill_id }}')" title="Print">
+                            <i class="fas fa-print"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    <div class="pagination">
+        {% if prev_page %}
+        <a href="?page={{ prev_page }}&{{ query_params }}" class="btn btn-secondary"><i class="fas fa-chevron-left"></i> Previous</a>
+        {% endif %}
+        <span>Page {{ current_page }} of {{ total_pages }}</span>
+        {% if next_page %}
+        <a href="?page={{ next_page }}&{{ query_params }}" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></a>
+        {% endif %}
+    </div>
+    
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-inbox" style="font-size: 4rem; color: var(--text-secondary); margin-bottom: var(--spacing-lg);"></i>
+        <h3>No transactions found</h3>
+        <p>Try adjusting your filters or create your first sale from <a href="/sales">Billing page</a></p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function printBill(billId) {
+    window.open(`/bill/pdf/${billId}`, '_blank');
+}
+</script>
+
+<style>
+.filters-form .form-row {
+    align-items: end;
+}
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-xl);
+}
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+}
+.payment-label {
+    display: flex;
+    align-items: center;
+}
+.payment-select {
+    min-width: 140px;
+}
+</style>
+
+{% endblock %}

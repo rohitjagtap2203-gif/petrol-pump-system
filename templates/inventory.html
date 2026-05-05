@@ -1,0 +1,139 @@
+{% extends "layout.html" %}
+
+{% block title %}Inventory Management - Petrol Pump Management System{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h2>📦 Inventory Management</h2>
+    <p class="page-subtitle">Manage fuel stock levels</p>
+</div>
+
+<!-- ADD STOCK FORM -->
+<div class="section">
+    <h3>➕ Add Fuel Stock</h3>
+
+    {% if message and message != 'success' %}
+        <div class="alert alert-error">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <form method="POST" class="form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="fuel">Fuel Type *</label>
+                <select id="fuel" name="fuel" required>
+                    <option value="">Select Fuel</option>
+                    <option value="Petrol">Petrol</option>
+                    <option value="Diesel">Diesel</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="stock">Quantity to Add (Liters) *</label>
+                <input type="number" id="stock" name="stock" placeholder="Enter liters to add" step="0.1" min="0" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Update Stock</button>
+        </div>
+    </form>
+
+    {% if message == 'success' %}
+        <div class="alert alert-success">
+            ✓ Stock updated successfully!
+        </div>
+    {% endif %}
+</div>
+
+<!-- INVENTORY TABLE -->
+<div class="section">
+    <h3>📊 Current Inventory Status</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fuel Type</th>
+                    <th>Current Price</th>
+                    <th>Stock Level</th>
+                    <th>Status</th>
+                    <th>Price per Liter</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if fuels %}
+                    {% for fuel in fuels %}
+                    <tr class="{% if fuel[3] < 100 %}low-stock-row{% endif %}">
+                        <td>
+                            <strong>{{ fuel[1] }}</strong>
+                        </td>
+                        <td>
+                            <span class="money">₹{{ fuel[2]|round(2) }}</span>
+                        </td>
+                        <td>
+                            <span class="stock-value {% if fuel[3] < 100 %}low-stock{% endif %}">
+                                {{ fuel[3]|round(2) }} L
+                            </span>
+                        </td>
+                        <td>
+                            {% if fuel[3] < 50 %}
+                                <span class="badge badge-critical">🔴 CRITICAL - Below 50L</span>
+                            {% elif fuel[3] < 100 %}
+                                <span class="badge badge-warning">🟡 LOW - Below 100L</span>
+                            {% elif fuel[3] < 200 %}
+                                <span class="badge badge-info">🔵 MODERATE - Refill Soon</span>
+                            {% else %}
+                                <span class="badge badge-success">🟢 GOOD</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span>₹{{ fuel[2]|round(2) }}/L</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">No fuel types available</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- STOCK ALERTS -->
+<div class="section">
+    <h3>⚠️ Stock Alerts</h3>
+    <div class="alerts-container">
+        {% set has_alerts = false %}
+        {% for fuel in fuels %}
+            {% if fuel[3] < 200 %}
+                {% set has_alerts = true %}
+                <div class="alert-item {% if fuel[3] < 50 %}critical{% elif fuel[3] < 100 %}warning{% else %}info{% endif %}">
+                    <span class="alert-icon">
+                        {% if fuel[3] < 50 %}🔴{% elif fuel[3] < 100 %}🟡{% else %}🔵{% endif %}
+                    </span>
+                    <span class="alert-text">
+                        <strong>{{ fuel[1] }}:</strong> 
+                        {% if fuel[3] < 50 %}
+                            CRITICAL - Only {{ fuel[3]|round(2) }} L remaining. Immediate refill required!
+                        {% elif fuel[3] < 100 %}
+                            LOW - Only {{ fuel[3]|round(2) }} L remaining. Please add stock soon.
+                        {% else %}
+                            Moderate stock - {{ fuel[3]|round(2) }} L available. Consider refilling.
+                        {% endif %}
+                    </span>
+                </div>
+            {% endif %}
+        {% endfor %}
+        
+        {% if not has_alerts %}
+            <div class="alert-item success">
+                <span class="alert-icon">✓</span>
+                <span class="alert-text">All fuel stocks are at healthy levels!</span>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

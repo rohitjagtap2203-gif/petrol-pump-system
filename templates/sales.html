@@ -1,0 +1,258 @@
+{% extends "layout.html" %}
+
+{% block title %}Billing - Petrol Pump Management System{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h2>🧾 Billing & Sales</h2>
+    <p class="page-subtitle">Process sales and generate bills</p>
+</div>
+
+<!-- BILLING FORM -->
+<div class="section billing-section">
+    <h3>💳 Generate Bill</h3>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert {% if category == 'error' %}alert-error{% else %}alert-success{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="billing-form">
+        {{ form.hidden_tag() }}
+        <div class="form-row">
+            <div class="form-group">
+                {{ form.customer.label }}
+                {{ form.customer(class="form-control", placeholder="Enter customer name") }}
+                {% if form.customer.errors %}
+                    <div class="form-error">
+                        {% for error in form.customer.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.phone.label }}
+                {{ form.phone(class="form-control", placeholder="Enter 10-digit mobile number", pattern="[0-9]{10}", title="Please enter a valid 10-digit mobile number", maxlength="10", inputmode="numeric") }}
+                <small style="color: #666; font-size: 12px;">Enter 10-digit Indian mobile number (e.g., 9876543210)</small>
+                {% if form.phone.errors %}
+                    <div class="form-error">
+                        {% for error in form.phone.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.payment_mode.label(class="payment-label") }}
+                {{ form.payment_mode(class="form-control payment-select") }}
+                {% if form.payment_mode.errors %}
+                    <div class="form-error">
+                        {% for error in form.payment_mode.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.fuel_type.label }}
+                {{ form.fuel_type(class="form-control", onchange="updatePrice()") }}
+                {% if form.fuel_type.errors %}
+                    <div class="form-error">
+                        {% for error in form.fuel_type.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.liters.label }}
+                {{ form.liters(class="form-control", step="0.1", min="0.1", onchange="calculateTotal()") }}
+                {% if form.liters.errors %}
+                    <div class="form-error">
+                        {% for error in form.liters.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-generate">Generate Bill</button>
+        </div>
+    </form>
+</div>
+
+<!-- BILL DISPLAY (POS-Style) -->
+{% if bill %}
+<div class="section">
+    <h3>📋 Receipt</h3>
+    <div class="bill-container">
+        <div class="bill-content">
+            <div class="bill-header">
+                <h4>⛽ Petrol Pump Management</h4>
+                <p>Receipt</p>
+            </div>
+
+            <div class="bill-separator"></div>
+
+            <div class="bill-section">
+                <p><strong>Customer:</strong> {{ bill.customer }}</p>
+                <p><strong>Mobile:</strong> {{ bill.phone }}</p>
+                <p><strong>Date & Time:</strong> {{ bill.date }}</p>
+            </div>
+
+            <div class="bill-separator"></div>
+
+            <div class="bill-items">
+                <div class="bill-item">
+                    <span>Fuel Type:</span>
+                    <span>{{ bill.fuel }}</span>
+                </div>
+                <div class="bill-item">
+                    <span>Quantity:</span>
+                    <span>{{ bill.liters }} L</span>
+                </div>
+                <div class="bill-item">
+                    <span>Rate/L:</span>
+                    <span>₹{{ bill.price }}</span>
+                </div>
+            </div>
+
+            <div class="bill-separator"></div>
+
+            <div class="bill-total">
+                <span>TOTAL AMOUNT:</span>
+                <span class="amount">₹{{ "%.2f"|format(bill.total) }}</span>
+            </div>
+
+            <div class="bill-separator"></div>
+
+            <div class="bill-footer">
+                <p>Thank you for your purchase!</p>
+                <button class="btn btn-small" onclick="printBill()">🖨️ Print Receipt</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- SUCCESS MESSAGE -->
+{% if message == 'success' %}
+<div class="alert alert-success">
+    ✓ Bill generated successfully! Stock updated.
+    <br><small style="margin-top: 8px; display: block;">📲 Bill receipt is being sent to WhatsApp...</small>
+</div>
+{% endif %}
+
+
+<!-- SALES HISTORY -->
+<div class="section print-hidden">
+    <h3>📊 Sales History</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Customer</th>
+                    <th>Mobile</th>
+                    <th>Fuel</th>
+                    <th>Quantity</th>
+                    <th>Price/L</th>
+                    <th>Total</th>
+                    <th>Date & Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if sales %}
+                    {% for sale in sales %}
+                    <tr>
+                        <td>{{ sale.id }}</td>
+                        <td>{{ sale.customer }}</td>
+                        <td>{{ sale.phone if sale.phone else '-' }}</td>
+                        <td>{{ sale.fuel_type }}</td>
+                        <td><span class="liters">{{ sale.liters|round(2) }} L</span></td>
+                        <td>₹{{ sale.price|round(2) }}</td>
+                        <td><span class="money">₹{{ sale.total|round(2) }}</span></td>
+                        <td>{{ sale.date }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center">No sales recorded yet</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .bill-container, .bill-container * {
+        visibility: visible;
+    }
+    .bill-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    .btn, button, .billing-form, .print-hidden {
+        display: none !important;
+    }
+}
+</style>
+
+
+<script>
+function updatePrice() {
+    const fuel = document.getElementById('fuel').value;
+    // Prices are displayed in the options
+}
+
+function calculateTotal() {
+    // Total calculation happens on server-side for accuracy
+}
+
+function printBill() {
+    window.print();
+    return false; // Prevent default if needed
+}
+
+// Mobile number validation
+document.getElementById('phone').addEventListener('input', function(e) {
+    // Remove non-digits
+    let value = e.target.value.replace(/\D/g, '');
+    
+    // Limit to 10 digits
+    if (value.length > 10) {
+        value = value.substring(0, 10);
+    }
+    
+    e.target.value = value;
+});
+
+// Form submission validation
+document.querySelector('.billing-form').addEventListener('submit', function(e) {
+    const phone = document.getElementById('phone').value.trim();
+    
+    if (!phone) {
+        e.preventDefault();
+        alert('Mobile number is required');
+        return false;
+    }
+    
+    if (!/^\d{10}$/.test(phone)) {
+        e.preventDefault();
+        alert('Mobile number must be exactly 10 digits');
+        return false;
+    }
+    
+    return true;
+});
+</script>
+
+{% endblock %}

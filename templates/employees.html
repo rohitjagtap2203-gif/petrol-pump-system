@@ -1,0 +1,175 @@
+{% extends "layout.html" %}
+
+{% block title %}Employee Management - Petrol Pump System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>👥 Employee Management</h2>
+    <p>Manage employee accounts, roles, and permissions</p>
+</div>
+
+<!-- ADD EMPLOYEE FORM -->
+<div class="section">
+    <h3>➕ Add New Employee</h3>
+    <form method="POST" class="form">
+        <input type="hidden" name="action" value="add">
+        {{ add_form.hidden_tag() }}
+        <div class="form-row">
+            <div class="form-group">
+                {{ add_form.name.label }}
+                {{ add_form.name(class="form-control", placeholder="Enter employee name") }}
+            </div>
+            <div class="form-group">
+                {{ add_form.username.label }}
+                {{ add_form.username(class="form-control", placeholder="Enter username") }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                {{ add_form.email.label }}
+                {{ add_form.email(class="form-control", placeholder="Enter email address") }}
+            </div>
+            <div class="form-group">
+                {{ add_form.phone.label }}
+                {{ add_form.phone(class="form-control", placeholder="Enter 10-digit phone number") }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                {{ add_form.role.label }}
+                {{ add_form.role(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ add_form.status.label }}
+                {{ add_form.status(class="form-control") }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                {{ add_form.password.label }}
+                {{ add_form.password(class="form-control", placeholder="Enter password") }}
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Add Employee</button>
+        </div>
+    </form>
+</div>
+
+<!-- EMPLOYEE ACCOUNTS TABLE -->
+<div class="section">
+    <h3>📋 Employee Accounts</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if employees %}
+                    {% for emp in employees %}
+                    <tr>
+                        <td>{{ emp[0] }}</td>
+                        <td><strong>{{ emp[1] }}</strong></td>
+                        <td>{{ emp[2] }}</td>
+                        <td>{{ emp[3] }}</td>
+                        <td>{{ emp[4] }}</td>
+                        <td>
+                            <span class="badge badge-{{ 'primary' if emp[5] == 'Admin' else 'info' if emp[5] == 'Manager' else 'secondary' }}">
+                                {{ emp[5] }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ 'success' if emp[6] == 'Active' else 'danger' }}">
+                                {{ emp[6] }}
+                            </span>
+                        </td>
+                        <td>{{ emp[7] }}</td>
+                        <td>
+                            <button class="btn btn-warning btn-small" onclick="editEmployee({{ emp[0] }}, '{{ emp[1] }}', '{{ emp[3] }}', '{{ emp[4] }}', '{{ emp[5] }}', '{{ emp[6] }}')">Edit</button>
+                            <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this employee?')">
+                                {{ add_form.csrf_token }}
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="user_id" value="{{ emp[0] }}">
+                                <button class="btn btn-danger btn-small" type="submit">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center">No employees added yet</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- EDIT EMPLOYEE MODAL -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h3>✏️ Edit Employee</h3>
+        <form method="POST" class="form">
+            <input type="hidden" name="action" value="update">
+            <input type="hidden" id="edit_user_id" name="user_id">
+            {{ update_form.hidden_tag() }}
+            <div class="form-group">
+                {{ update_form.name.label }}
+                {{ update_form.name(id="edit_name", class="form-control", placeholder="Enter employee name") }}
+            </div>
+            <div class="form-group">
+                {{ update_form.email.label }}
+                {{ update_form.email(id="edit_email", class="form-control", placeholder="Enter employee email") }}
+            </div>
+            <div class="form-group">
+                {{ update_form.phone.label }}
+                {{ update_form.phone(id="edit_phone", class="form-control", placeholder="Enter employee phone") }}
+            </div>
+            <div class="form-group">
+                {{ update_form.role.label }}
+                {{ update_form.role(id="edit_role", class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ update_form.status.label }}
+                {{ update_form.status(id="edit_status", class="form-control") }}
+            </div>
+            <button type="submit" class="btn btn-primary">Update Employee</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function editEmployee(id, name, email, phone, role, status) {
+    document.getElementById('edit_user_id').value = id;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_email').value = email;
+    document.getElementById('edit_phone').value = phone;
+    document.getElementById('edit_role').value = role;
+    document.getElementById('edit_status').value = status;
+    document.getElementById('editModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('editModal');
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+</script>
+
+{% endblock %}

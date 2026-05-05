@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Petrol Pump Management System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="login-page">
+
+<div class="login-container">
+    <div class="login-box">
+    <h1>⛽ Petrol Pump Management</h1>
+    <p class="login-type">{% if login_type == 'Admin' %}Admin Sign In{% elif login_type == 'Employee' %}Employee / Manager Sign In{% else %}Secure Sign In{% endif %}</p>
+        <p class="subtitle">Professional Management System</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert {% if category == 'error' %}alert-error{% else %}alert-success{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" class="login-form">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.username.label }}
+                {{ form.username(class="form-control", placeholder="Enter username") }}
+                {% if form.username.errors %}
+                    <div class="form-error">
+                        {% for error in form.username.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.password.label }}
+                <div class="password-input-group">
+                    {{ form.password(class="form-control", placeholder="Enter password", id="password-field") }}
+                    <button type="button" class="btn btn-secondary btn-show-password" onclick="togglePassword(event)">Show</button>
+                </div>
+                {% if form.password.errors %}
+                    <div class="form-error">
+                        {% for error in form.password.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group remember-group">
+                <label class="remember-label">{{ form.remember_me() }} Remember Me</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Login</button>
+        </form>
+
+        <div class="login-links">
+            <a href="/admin-login">Admin Login</a> · <a href="/employee-login">Employee Login</a>
+        </div>
+
+        <div class="login-footer">
+            <p class="demo-info">
+                <strong>Demo Credentials:</strong><br>
+                Username: <code>admin</code><br>
+                Password: <code>admin123</code>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePassword(event) {
+    const passwordField = document.getElementById('password-field');
+    if (!passwordField) return;
+    const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+    passwordField.setAttribute('type', type);
+    event.target.textContent = type === 'password' ? 'Show' : 'Hide';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard - Petrol Pump Management System{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <h2><i class="fas fa-chart-line"></i> Dashboard</h2>
+    <p class="page-subtitle">Production Analytics & Inventory Overview</p>
+    
+    <!-- LOW STOCK ALERT BANNER (PHASE 2.4) -->
+    <div id="lowStockAlert" class="alert-banner" style="display: none;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Low Stock Alert!</strong> 
+        <span id="lowStockMsg"></span>
+        <button onclick="fetchCharts()" style="margin-left: auto; background: none; border: none; color: white; cursor: pointer;"><i class="fas fa-sync-alt"></i></button>
+    </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="kpi-section">
+    <div class="kpi-card">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-content">
+            <h3>Total Revenue</h3>
+            <p class="kpi-value money">₹{{ "{:,.2f}".format(total_revenue) }}</p>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon">📈</div>
+        <div class="kpi-content">
+            <h3>Total Transactions</h3>
+            <p class="kpi-value">{{ total_transactions }}</p>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon">⛽</div>
+        <div class="kpi-content">
+            <h3>Fuel Types</h3>
+            <p class="kpi-value">{{ fuels|length }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- CHARTS SECTION - PHASE 2.2 & 2.3 -->
+<div class="charts-section">
+    <div class="section">
+        <h3><i class="fas fa-chart-mixed"></i> Analytics Charts <small>(Last 30 days)</small></h3>
+        <div class="charts-grid">
+            <!-- Daily Revenue Line Chart -->
+            <div class="chart-card">
+                <h4>Daily Revenue Trend</h4>
+                <canvas id="dailyRevenueChart"></canvas>
+            </div>
+            
+            <!-- Fuel Sales Pie Chart -->
+            <div class="chart-card">
+                <h4>Fuel Type Distribution</h4>
+                <canvas id="fuelPieChart"></canvas>
+            </div>
+            
+            <!-- Monthly Sales Bar Chart -->
+            <div class="chart-card full-width">
+                <h4>Monthly Sales Performance</h4>
+                <canvas id="monthlySalesChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FUEL INVENTORY OVERVIEW -->
+<div class="section">
+    <h3><i class="fas fa-gas-pump"></i> Fuel Inventory Status</h3>
+    <div class="fuel-grid">
+        {% for fuel in fuels %}
+        <div class="fuel-card">
+            <h4>{{ fuel[1] }}</h4>
+            <div class="fuel-details">
+                <div class="detail-item">
+                    <span class="label">Price:</span>
+                    <span class="value money">₹{{ "%.2f"|format(fuel[2]) }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="label">Stock:</span>
+                    <span class="value liters">{{ "%.1f"|format(fuel[3]) }} L</span>
+                </div>
+                {% if fuel[3] < 100 %}
+                <div class="low-stock-alert">
+                    <i class="fas fa-exclamation-triangle"></i> Low Stock Alert
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- FUEL-WISE SALES SUMMARY -->
+<div class="section">
+    <h3>📊 Sales Summary by Fuel Type</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fuel Type</th>
+                    <th>Transactions</th>
+                    <th>Total Liters</th>
+                    <th>Revenue</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if fuel_summary %}
+                    {% for summary in fuel_summary %}
+                    <tr>
+                        <td><strong>{{ summary.fuel_type }}</strong></td>
+                        <td>{{ summary.transactions }}</td>
+                        <td><span class="liters">{{ summary.total_liters|default(0)|round(2) }} L</span></td>
+                        <td><span class="money">₹{{ summary.revenue|default(0)|round(2) }}</span></td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center">No sales data available</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- RECENT TRANSACTIONS -->
+<div class="section">
+    <h3>🕐 Recent Transactions</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Fuel Type</th>
+                    <th>Quantity</th>
+                    <th>Amount</th>
+                    <th>Date & Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if recent_sales %}
+                    {% for sale in recent_sales %}
+                    <tr>
+                        <td>{{ sale.customer }}</td>
+                        <td>{{ sale.fuel_type }}</td>
+                        <td><span class="liters">{{ sale.liters|round(2) }} L</span></td>
+                        <td><span class="money">₹{{ sale.total|round(2) }}</span></td>
+                        <td>{{ sale.date }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">No transactions yet</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,112 @@
+# Render.com Deployment Configuration
+# Save as render.yaml in your repository root
+
+services:
+  - type: web
+    name: petrol-pump-api
+    env: python
+    plan: standard
+    region: singapore
+    runtime: python-3.12
+
+    # Build command
+    # Production runs directly from requirements.txt (includes gunicorn + psycopg2)
+    buildCommand: "pip install -r requirements.txt"
+
+    # Start command (must use `app:app`)
+    startCommand: "gunicorn --workers 4 --worker-class sync --bind 0.0.0.0:$PORT --timeout 120 --access-logfile - --error-logfile app:app"
+
+    # Environment variables
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: petrol_pump_db
+          property: connectionString
+      - key: REDIS_URL
+        value: redis://redis-server:6379/0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+
+  # PostgreSQL Database
+  - type: pserv
+    name: petrol_pump_db
+    plan: free
+    ipAllowList: []
+    region: singapore
+    
+    # Backup (optional)
+    backups:
+      enabled: true
+      schedule: daily
+
+  # Redis Cache (optional but recommended)
+  - type: pserv
+    name: redis-server
+    plan: free
+    image: redis:7-alpine
+    region: singapore
+
+# Internal network
+networks:
+  - name: pump_network
+
+---
+
+# ==================== DEPLOYMENT STEPS ====================
+
+# 1. Create Render account at https://render.com
+
+# 2. Create PostgreSQL database
+#    - Click on "New" → PostgreSQL
+#    - Name: petrol_pump_db
+#    - Region: Singapore
+#    - Keep other defaults
+
+# 3. Create Web Service
+#    - Click on "New" → Web Service
+#    - Connect GitHub repository
+#    - Select this repository
+#    - Name: petrol-pump-api
+#    - Environment: Python 3.11
+#    - Build: pip install -r requirements_production.txt && flask db upgrade
+#    - Start: gunicorn --workers 4 --bind 0.0.0.0:$PORT wsgi:app
+
+# 4. Add Environment Variables
+#    - DATABASE_URL: (auto-filled from database)
+#    - FLASK_ENV: production
+#    - JWT_SECRET_KEY: (generate secure key)
+#    - SECRET_KEY: (generate secure key)
+#    - TWILIO_ACCOUNT_SID: (add your Twilio SID)
+#    - TWILIO_AUTH_TOKEN: (add your auth token)
+
+# 5. Deploy
+#    - Click Deploy
+#    - Monitor logs in Dashboard
+
+# ==================== MONITORING ====================
+
+# After deployment, monitor at:
+# - Logs: https://dashboard.render.com/
+# - API Health: https://your-app.onrender.com/api/health
+# - Database: Render Dashboard → Database
+
+# ==================== SCALING ====================
+
+# To scale:
+# 1. Increase worker count in startCommand (--workers 8)
+# 2. Upgrade database plan (free → pro)
+# 3. Add caching layer (Redis)
+# 4. Enable CDN for static assets
+
+# ==================== BACKUP & RECOVERY ====================
+
+# PostgreSQL automatic backups are enabled
+# To restore:
+# 1. Go to Render Dashboard
+# 2. Select database
+# 3. Click "Backups"
+# 4. Click "Restore"

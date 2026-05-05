@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Petrol Pump Management System{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+    <div class="container">
+        <div class="header-content">
+            <div class="logo">
+                <h1>⛽ Petrol Pump Management</h1>
+            </div>
+            <div class="user-menu">
+                <span class="user-greeting">Welcome, <strong>{{ username }}</strong></span>
+                <a href="/logout" class="btn btn-logout">Logout</a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- NAVIGATION -->
+<nav class="navbar">
+    <div class="container">
+        <ul class="nav-menu">
+            {% if session.user_id %}
+            <li><a href="/" class="nav-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="/sales" class="nav-link"><i class="fas fa-receipt"></i> Billing</a></li>
+            {% if session.role == 'Admin' %}
+            <li><a href="/inventory" class="nav-link"><i class="fas fa-warehouse"></i> Inventory</a></li>
+            <li><a href="/employees" class="nav-link"><i class="fas fa-users-cog"></i> Employees</a></li>
+            <li><a href="/customers" class="nav-link"><i class="fas fa-users"></i> Customers</a></li>
+            <li><a href="/reports" class="nav-link"><i class="fas fa-file-alt"></i> Reports</a></li>
+            {% endif %}
+            <li><a href="/logout" class="nav-link"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+
+<!-- Font Awesome & Chart.js CDNs (Phase 2.2) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+    <p>&copy; 2026 Petrol Pump Management System | Professional Edition</p>
+</footer>
+
+<script src="/static/script.js"></script>
+    <!-- Load charts.js only on dashboard -->
+    {% if 'dashboard' in request.path %}
+    <script src="/static/js/charts.js"></script>
+    {% endif %}
+
+</body>
+</html>

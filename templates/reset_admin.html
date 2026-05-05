@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+
+{% block title %}Reset Admin - Petrol Pump Management System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>🔐 Reset Admin Credentials</h2>
+    <p class="page-subtitle">Set admin username/password safely</p>
+</div>
+
+<div class="section">
+    {% if message %}
+        <div class="alert {% if 'success' in message %}alert-success{% else %}alert-error{% endif %}">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <form method="POST" class="form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="username">New Admin Username</label>
+                <input type="text" id="username" name="username" placeholder="admin" value="admin" required>
+            </div>
+            <div class="form-group">
+                <label for="password">New Admin Password</label>
+                <input type="password" id="password" name="password" placeholder="admin123" value="admin123" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Reset Admin</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
