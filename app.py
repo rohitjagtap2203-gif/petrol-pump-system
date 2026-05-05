@@ -186,8 +186,23 @@ def record_login_attempt(username, success, message=''):
         "INSERT INTO login_attempts (username, success, ip_address, user_agent, message) VALUES (%s, %s, %s, %s, %s)",
         (username, int(success), ip_address, user_agent, message)
     )
+
     conn.commit()
+    
+    if DATABASE_URL:
+        # Create default admin user if doesn't exist
+        cursor.execute("SELECT 1 FROM users WHERE username=%s LIMIT 1", ('admin',))
+        if not cursor.fetchone():
+            hashed_password = generate_password_hash('admin123')
+            cursor.execute(
+                "INSERT INTO users (name, username, password, role) VALUES (%s, %s, %s, %s)",
+                ('Admin', 'admin', hashed_password, 'admin')
+            )
+            conn.commit()
+            logger.info("Default admin user created (username: admin, password: admin123)")
+    
     conn.close()
+
 
 
 def ensure_database_schema():
