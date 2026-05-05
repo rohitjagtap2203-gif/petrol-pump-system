@@ -95,7 +95,10 @@ csrf = CSRFProtect(app)
 # Production-ready DB handling:
 # - Render provides `DATABASE_URL` for Postgres.
 # - For local development, we keep the existing SQLite file fallback.
-DATABASE_URL = os.getenv("DATABASE_URL")  # set by Render Postgres service
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = "postgresql://" + DATABASE_URL[10:]  # Fix for psycopg2
+# set by Render Postgres service
 
 def get_db():
     """
@@ -218,7 +221,7 @@ def ensure_database_schema():
     cursor = conn.cursor()
 
     if DATABASE_URL:
-        # PostgreSQL schema
+        # PostgreSQL schema - COMPLETE
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users(
                 id SERIAL PRIMARY KEY,
@@ -236,15 +239,44 @@ def ensure_database_schema():
             )
         """)
 
-        # Create default admin user if not exists
-        cursor.execute("SELECT id FROM users WHERE username=%s", ("admin",))
-        admin = cursor.fetchone()
-        if not admin:
-            password = generate_password_hash("admin123")
-            cursor.execute(
-                "INSERT INTO users (name, username, password, role) VALUES (%s, %s, %s, %s)",
-                ("Admin", "admin", password, "admin")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS fuel(
+                id SERIAL PRIMARY KEY,
+                type TEXT NOT NULL UNIQUE,
+                price NUMERIC NOT NULL DEFAULT 0,
+                stock NUMERIC NOT NULL DEFAULT 0,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales(
+                id SERIAL PRIMARY KEY,
+                bill_id TEXT NOT NULL UNIQUE,
+                customer TEXT NOT NULL,
+                phone TEXT,
+                payment_mode TEXT DEFAULT 'Cash',
+                fuel_type TEXT NOT NULL,
+                liters NUMERIC NOT NULL,
+                price NUMERIC NOT NULL,
+                total NUMERIC NOT NULL,
+                date TIMESTAMP NOT NULL,
+                employee_id INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS customers(
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL,
+                phone TEXT UNIQUE,
+                total_visits INTEGER DEFAULT 0,
+                total_fuel NUMERIC DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS login_attempts(
@@ -257,6 +289,23 @@ def ensure_database_schema():
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # Default admin user (idempotent)
+        cursor.execute("SELECT id FROM users WHERE username=%s", ("admin",))
+        if not cursor.fetchone():
+            password = generate_password_hash("admin123")
+            cursor.execute(
+                "INSERT INTO users (name, username, password, role) VALUES (%s, %s, %s, %s)",
+                ("Admin", "admin", password, "admin")
+            )
+            logger.info("Default admin created on startup")
+
+        # Default fuel data (idempotent)
+        cursor.execute("SELECT COUNT(*) FROM fuel")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("INSERT INTO fuel (type, price, stock) VALUES ('Petrol', 100.0, 500.0)")
+            cursor.execute("INSERT INTO fuel (type, price, stock) VALUES ('Diesel', 90.0, 600.0)")
+            logger.info("Default fuel data initialized")
     else:
         # SQLite schema (existing)
 

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: petrol-pump
+    env: python
+    buildCommand: pip install -r requirements_production.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - fromDatabase:
+          name: petrol_db
+          property: connectionString
+          env: DATABASE_URL
+  - type: pgsql
+    name: petrol_db
+    version: '15'
+
