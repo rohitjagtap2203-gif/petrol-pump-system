@@ -596,10 +596,6 @@ def sales():
                     price = float(fuel_data[0])
                     stock = float(fuel_data[1])
 
-            except Exception as e:
-                print("DB error:", e)
-                flash("Database error", "error")
-
                     if liters > stock:
                         flash(f'Not enough stock! Available: {stock} L', 'error')
                     else:
@@ -663,6 +659,10 @@ def sales():
                                 logger.warning(f"WhatsApp sending failed: {whatsapp_msg}")
                         except Exception as whatsapp_error:
                             logger.error(f"WhatsApp integration error: {str(whatsapp_error)}")
+
+            except Exception as e:
+                print("DB error:", e)
+                flash("Database error", "error")
 
             except sqlite3.Error as db_error:
                 conn.rollback()
