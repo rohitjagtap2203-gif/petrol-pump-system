@@ -301,8 +301,9 @@ def ensure_database_schema():
             logger.info("Default admin created on startup")
 
         # Default fuel data (idempotent)
-        cursor.execute("SELECT COUNT(*) FROM fuel")
-        if cursor.fetchone()[0] == 0:
+        cursor.execute("SELECT COUNT(*) AS count FROM fuel")
+        result = cursor.fetchone()
+        if result and result['count'] == 0:
             cursor.execute("INSERT INTO fuel (type, price, stock) VALUES ('Petrol', 100.0, 500.0)")
             cursor.execute("INSERT INTO fuel (type, price, stock) VALUES ('Diesel', 90.0, 600.0)")
             logger.info("Default fuel data initialized")
