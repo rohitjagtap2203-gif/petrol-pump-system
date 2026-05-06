@@ -76,17 +76,17 @@
     <div class="fuel-grid">
         {% for fuel in fuels %}
         <div class="fuel-card">
-            <h4>{{ fuel[1] }}</h4>
+            <h4>{{ fuel.type }}</h4>
             <div class="fuel-details">
                 <div class="detail-item">
                     <span class="label">Price:</span>
-                    <span class="value money">₹{{ "%.2f"|format(fuel[2]) }}</span>
+                    <span class="value money">₹{{ "%.2f"|format(fuel.price) }}</span>
                 </div>
                 <div class="detail-item">
                     <span class="label">Stock:</span>
-                    <span class="value liters">{{ "%.1f"|format(fuel[3]) }} L</span>
+                    <span class="value liters">{{ "%.1f"|format(fuel.stock) }} L</span>
                 </div>
-                {% if fuel[3] < 100 %}
+                {% if fuel.stock < 100 %}
                 <div class="low-stock-alert">
                     <i class="fas fa-exclamation-triangle"></i> Low Stock Alert
                 </div>

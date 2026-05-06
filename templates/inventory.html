@@ -63,31 +63,31 @@
             <tbody>
                 {% if fuels %}
                     {% for fuel in fuels %}
-                    <tr class="{% if fuel[3] < 100 %}low-stock-row{% endif %}">
+                    <tr class="{% if fuel.stock < 100 %}low-stock-row{% endif %}">
                         <td>
-                            <strong>{{ fuel[1] }}</strong>
+                            <strong>{{ fuel.type }}</strong>
                         </td>
                         <td>
-                            <span class="money">₹{{ fuel[2]|round(2) }}</span>
+                            <span class="money">₹{{ fuel.price|round(2) }}</span>
                         </td>
                         <td>
-                            <span class="stock-value {% if fuel[3] < 100 %}low-stock{% endif %}">
-                                {{ fuel[3]|round(2) }} L
+                            <span class="stock-value {% if fuel.stock < 100 %}low-stock{% endif %}">
+                                {{ fuel.stock|round(2) }} L
                             </span>
                         </td>
                         <td>
-                            {% if fuel[3] < 50 %}
+                            {% if fuel.stock < 50 %}
                                 <span class="badge badge-critical">🔴 CRITICAL - Below 50L</span>
-                            {% elif fuel[3] < 100 %}
+                            {% elif fuel.stock < 100 %}
                                 <span class="badge badge-warning">🟡 LOW - Below 100L</span>
-                            {% elif fuel[3] < 200 %}
+                            {% elif fuel.stock < 200 %}
                                 <span class="badge badge-info">🔵 MODERATE - Refill Soon</span>
                             {% else %}
                                 <span class="badge badge-success">🟢 GOOD</span>
                             {% endif %}
                         </td>
                         <td>
-                            <span>₹{{ fuel[2]|round(2) }}/L</span>
+                            <span>₹{{ fuel.price|round(2) }}/L</span>
                         </td>
                     </tr>
                     {% endfor %}
@@ -107,20 +107,20 @@
     <div class="alerts-container">
         {% set has_alerts = false %}
         {% for fuel in fuels %}
-            {% if fuel[3] < 200 %}
+            {% if fuel.stock < 200 %}
                 {% set has_alerts = true %}
-                <div class="alert-item {% if fuel[3] < 50 %}critical{% elif fuel[3] < 100 %}warning{% else %}info{% endif %}">
+                <div class="alert-item {% if fuel.stock < 50 %}critical{% elif fuel.stock < 100 %}warning{% else %}info{% endif %}">
                     <span class="alert-icon">
-                        {% if fuel[3] < 50 %}🔴{% elif fuel[3] < 100 %}🟡{% else %}🔵{% endif %}
+                        {% if fuel.stock < 50 %}🔴{% elif fuel.stock < 100 %}🟡{% else %}🔵{% endif %}
                     </span>
                     <span class="alert-text">
-                        <strong>{{ fuel[1] }}:</strong> 
-                        {% if fuel[3] < 50 %}
-                            CRITICAL - Only {{ fuel[3]|round(2) }} L remaining. Immediate refill required!
-                        {% elif fuel[3] < 100 %}
-                            LOW - Only {{ fuel[3]|round(2) }} L remaining. Please add stock soon.
+                        <strong>{{ fuel.type }}:</strong> 
+                        {% if fuel.stock < 50 %}
+                            CRITICAL - Only {{ fuel.stock|round(2) }} L remaining. Immediate refill required!
+                        {% elif fuel.stock < 100 %}
+                            LOW - Only {{ fuel.stock|round(2) }} L remaining. Please add stock soon.
                         {% else %}
-                            Moderate stock - {{ fuel[3]|round(2) }} L available. Consider refilling.
+                            Moderate stock - {{ fuel.stock|round(2) }} L available. Consider refilling.
                         {% endif %}
                     </span>
                 </div>
