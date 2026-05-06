@@ -513,10 +513,11 @@ def process_login(login_type=None):
                 session.permanent = bool(remember_me)
                 session['user_id'] = user_id
                 session['username'] = username
-# Temporary role fix
+# Fast role fix
                 if username == 'admin':
-                    role = 'Admin'
-                session['role'] = role
+                    session['role'] = 'Admin'
+                else:
+                    session['role'] = role
                 session['name'] = name
                 session['last_active'] = datetime.now().isoformat()
                 flash('Login successful!', 'success')
