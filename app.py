@@ -199,7 +199,7 @@ def record_login_attempt(username, success, message=''):
             hashed_password = generate_password_hash('admin123')
             cursor.execute(
                 "INSERT INTO users (name, username, password, role) VALUES (%s, %s, %s, %s)",
-                ('Admin', 'admin', hashed_password, 'admin')
+                ('Admin', 'admin', hashed_password, 'Admin')
             )
             conn.commit()
             logger.info("Default admin user created (username: admin, password: admin123)")
@@ -290,15 +290,21 @@ def ensure_database_schema():
             )
         """)
 
-        # Default admin user (idempotent)
+# Default admin user (idempotent)
         cursor.execute("SELECT id FROM users WHERE username=%s", ("admin",))
         if not cursor.fetchone():
             password = generate_password_hash("admin123")
             cursor.execute(
                 "INSERT INTO users (name, username, password, role) VALUES (%s, %s, %s, %s)",
-                ("Admin", "admin", password, "admin")
+                ("Admin", "admin", password, "Admin")
             )
             logger.info("Default admin created on startup")
+
+# Ensure admin role is correct
+        cursor.execute(
+            "UPDATE users SET role=%s WHERE username=%s",
+            ("Admin", "admin")
+        )
 
         # Default fuel data (idempotent)
         cursor.execute("SELECT COUNT(*) AS count FROM fuel")
@@ -507,6 +513,9 @@ def process_login(login_type=None):
                 session.permanent = bool(remember_me)
                 session['user_id'] = user_id
                 session['username'] = username
+# Temporary role fix
+                if username == 'admin':
+                    role = 'Admin'
                 session['role'] = role
                 session['name'] = name
                 session['last_active'] = datetime.now().isoformat()
@@ -581,12 +590,15 @@ def dashboard():
         cursor = conn.cursor()
 
         # Total revenue
-        cursor.execute("SELECT SUM(total) FROM sales")
-        total_revenue = cursor.fetchone()[0] or 0
+# Total revenue
+        cursor.execute("SELECT COALESCE(SUM(total),0) AS total_revenue FROM sales")
+        result = cursor.fetchone()
+        total_revenue = float(result['total_revenue']) if result else 0
 
         # Total transactions
-        cursor.execute("SELECT COUNT(*) FROM sales")
-        total_transactions = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) AS total_transactions FROM sales")
+        result = cursor.fetchone()
+        total_transactions = int(result['total_transactions']) if result else 0
 
         # Fuel inventory
         cursor.execute("SELECT * FROM fuel ORDER BY type")
@@ -669,8 +681,8 @@ def sales():
                 if not fuel_data:
                     flash('Fuel type not found', 'error')
                 else:
-                    price = float(fuel_data[0])
-                    stock = float(fuel_data[1])
+                    price = float(fuel_data['price'])
+                    stock = float(fuel_data['stock'])
 
                     if liters > stock:
                         flash(f'Not enough stock! Available: {stock} L', 'error')
@@ -688,8 +700,9 @@ def sales():
                         conn.execute("BEGIN TRANSACTION")
                         # Customer upsert logic (Phase 5.2)
                         cursor.execute("""
-                            INSERT OR IGNORE INTO customers (name, phone)
+                            INSERT INTO customers (name, phone)
                             VALUES (%s, %s)
+                            ON CONFLICT (phone) DO NOTHING
                         """, (customer, formatted_phone))
                         
                         cursor.execute("""
@@ -852,7 +865,7 @@ def employees():
                     try:
                         hashed_password = generate_password_hash(password)
                         cursor.execute(
-                            "INSERT INTO users (name, username, email, phone, password, role, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                            "INSERT INTO users (name, username, email, phone, password, role, status) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                             (name, username, email, phone, hashed_password, role, status)
                         )
                         conn.commit()
@@ -880,7 +893,7 @@ def employees():
                     if user_id and user_id.isdigit():
                         try:
                             cursor.execute(
-                                "UPDATE users SET name=?, email=?, phone=?, role=?, status=? WHERE id=? AND role!='Admin'",
+                                "UPDATE users SET name=%s, email=%s, phone=%s, role=%s, status=%s WHERE id=%s AND role!='Admin'",
                                 (name, email, phone, role, status, int(user_id))
                             )
                             conn.commit()
@@ -947,12 +960,12 @@ def reports():
     
     payment_mode = request.args.get('payment_mode')
     if payment_mode:
-        query += " AND payment_mode = ?"
+        query += " AND payment_mode = %s"
         params.append(payment_mode)
     
     fuel_type = request.args.get('fuel_type')
     if fuel_type:
-        query += " AND fuel_type = ?"
+        query += " AND fuel_type = %s"
         params.append(fuel_type)
     
     query += " ORDER BY date DESC LIMIT ? OFFSET ?"
